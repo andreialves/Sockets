@@ -3,22 +3,26 @@ import socket, threading
 HOST = "127.0.0.1"      #Endereço ip do Servidor
 PORT = 20000            #Porta do Servidor´
 
-udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-'''
-def chat(udp):
-    while True:
-        msg, cliente = udp.recvfrom(1024)
-        data_string = msg.decode()
-        if not msg:
-            break
-        print(str(cliente)+": " +data_string)
-'''
-msg = input('Nome do Usuário: ')
-while msg != 'bye':
-    udp.sendto(msg.encode(), (HOST, PORT))
-    msg = input()
-#clientT = threading.Thread(target=chat, args=(udp, ))
-#clientT.start()
+class Client:
+    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def __init__(self, usuario):
+        self.udp.sendto(usuario.encode(), (HOST, PORT))
+        cThread = threading.Thread(target=self.chat)
+        cThread.start()
+        while True:
+            try:
+                msg, serv = self.udp.recvfrom(1024)
+            except:
+                print("Aconteceu alguma coisa.")
+            data_string = msg.decode('utf-8')
+            if not msg:
+                break
+            print(data_string)
+    
+    def chat(self):
+        while True:
+            msg = input()
+            self.udp.sendto(msg.encode(), (HOST, PORT))
 
-
-udp.close()
+usr = input('Nome do Usuário: ')
+cliente = Client(usr)

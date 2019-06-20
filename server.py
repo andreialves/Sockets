@@ -13,53 +13,44 @@ class Server:
     def __init__(self):
         self.udp.bind((HOST, PORT))
 
-    def chat(self):
-        while True:
-            msg, endereco = self.udp.recvfrom(1024)
-            data_string = msg.decode('utf-8')
-
-            '''
-            if not msg or data_string == "bye":
-                m = "Cliente " + str(self.usuarios_ativos[msg]) + " desconectou"
-                print(m)
-                del self.usuarios_ativos[msg]
-                udp.close()
-                for usuarios_ativos in self.usuarios_ativos.keys():
-                    usuarios_ativos.send(m.encode())
-                break
-            elif msg or data_string == "/list":
-                m = "Clientes conectados: " + ", ".join(["%s" % v for v in self.usuarios_ativos.values()])
-                endereco.send(m.encode)
-            else:
-            '''
-            msg = str(self.usuarios_ativos[endereco]) + " disse: " + data_string
-            print (msg)
-            '''           
-            for usuarios_ativos in self.usuarios_ativos.keys():
-                if(usuarios_ativos == msg):
-                    continue
-                usuarios_ativos.send(msg.encode())
-            '''
+    def chat(self, msg, endereco):
+        data_string = msg.decode('utf-8')
+        if data_string == "/bye":
+            m = "Cliente " + str(self.usuarios_ativos[endereco]) + " desconectou"
+            print(m)
+            del self.usuarios_ativos[endereco]
             self.udp.close()
+            for usuarios_ativos in self.usuarios_ativos.keys():
+                self.udp.sendto(m.encode(), usuarios_ativos)
+        elif data_string == "/list":
+            m = "Clientes conectados: " + ", ".join(["%s" % v for v in self.usuarios_ativos.values()])
+            self.udp.sendto(m.encode(), endereco)
+        else:
+            m = str(self.usuarios_ativos[endereco]) + " disse: " + data_string
+            for usuarios_ativos in self.usuarios_ativos.keys():
+                if(usuarios_ativos == endereco):
+                    continue
+                self.udp.sendto(m.encode(), usuarios_ativos)
+            
             
     def run(self):
         print("Aguardando conexões: ")
         while True:
             msg, endereco = self.udp.recvfrom(1024)
-            nome = msg.decode()
-            serverT = threading.Thread(target=self.chat)
+            if endereco not in self.usuarios_ativos:
+                nome = msg.decode()
+                self.usuarios_ativos[endereco] = nome
+                m = str(self.usuarios_ativos[endereco]) + " entrou" 
+                print(m)
+            serverT = threading.Thread(target=self.chat, args=(msg, endereco))
             serverT.start()
-        
-            self.usuarios_ativos[endereco] = nome
-            m = str(self.usuarios_ativos[endereco]) + " entrou"
-            print(m)
             '''
             for usuarios_ativos in self.usuarios_ativos.keys():
-                if(usuarios_ativos == self.udp.recvfrom(1024)):
+                if(usuarios_ativos == endereco):
                     continue
-                usuarios_ativos.send(m.encode())
+                self.udp.sendto(m.encode(), usuarios_ativos)
             '''
-        
+            
             
 servidor = Server()
 servidor.run()
