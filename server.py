@@ -35,6 +35,7 @@ class Server:
             
     def run(self):
         print("Aguardando conexões: ")
+        
         while True:
             msg, endereco = self.udp.recvfrom(1024)
             if endereco not in self.usuarios_ativos:
@@ -42,14 +43,16 @@ class Server:
                 self.usuarios_ativos[endereco] = nome
                 m = str(self.usuarios_ativos[endereco]) + " entrou" 
                 print(m)
-            serverT = threading.Thread(target=self.chat, args=(msg, endereco))
-            serverT.start()
-            '''
-            for usuarios_ativos in self.usuarios_ativos.keys():
-                if(usuarios_ativos == endereco):
-                    continue
-                self.udp.sendto(m.encode(), usuarios_ativos)
-            '''
+                for usuarios_ativos in self.usuarios_ativos.keys():
+                    if(usuarios_ativos == endereco):
+                        continue
+                    self.udp.sendto(m.encode(), usuarios_ativos)
+            else:
+                serverT = threading.Thread(target=self.chat, args=(msg, endereco))
+                serverT.start()
+            
+           
+            
             
             
 servidor = Server()
