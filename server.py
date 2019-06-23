@@ -9,7 +9,7 @@ PORT = 20000    #porta do servidor
 class Server:
 
     user = {}
-    info = 0
+    arquivos = []
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -37,29 +37,38 @@ class Server:
                     continue
                 self.udp.sendto(m.encode(), user)
 
-    def envioArq(self, con, cliente):
+    def envioArq(self):
+        con, cliente = self.tcp.accept()
         while True:
             try:
                 info_bin = b''
-                st = time.time()
                 while True:
-                    arq = con.recv(1024)
+                    arq = con.recv(2048)
                     if not arq:
                         break
                     info_bin += arq
-                    if time.time - st >= 2:
-                        print ('bytes downloaded: ', len(info_bin))
-                        st = time.time()
                 info = pickle.loads(info_bin)
                 if info['file']:
-                    dest = 'files/{}'.format(info['name'])
+                    dest = 'files/{}'.format(info['nome'])
                     with open(dest, 'wb') as f:
                         f.write(info['file'])
-                    con.close()
+                    print('success on receiving and saving {} for {}'.format(info['nome'], con.getpeername()))
+                    self.arquivos.append(info['nome'])
+                '''
+                m = info['usuario'] + " enviou " + info['nome']
+                for user in self.user.keys():
+                    if (info['usuario'] in self.user):
+                        continue
+                    self.udp.sendto(m.encode(), user)
+                '''
             except Exception as e:
                 print(e)
+                print(sys.exc_info())
                 break
+        #con.close()
 
+    def download(self, con, cliente):
+        print("Ei")
 
     def run(self):
         print("Aguardando conexões: ")
@@ -78,8 +87,11 @@ class Server:
                         continue
                     self.udp.sendto(m.encode(), user)
             elif a[0] == "/file":
+                serverT = threading.Thread(target=self.envioArq)
+                serverT.start()
+            elif a[0] == "/get":
                 con, cliente = self.tcp.accept()
-                serverT = threading.Thread(target=self.envioArq, args=(con, cliente))
+                serverT = threading.Thread(target=self.download, args=(con, cliente))
                 serverT.start()
             else:
                 serverT = threading.Thread(target=self.chat, args=(msg, endereco))

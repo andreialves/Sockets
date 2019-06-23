@@ -11,10 +11,11 @@ class Client:
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     log = []
+    user = ''
     
     def __init__(self, usuario):
         self.udp.sendto(usuario.encode(), (HOST, PORT))
-        
+        self.user = usuario
         cThread = threading.Thread(target=self.chat)
         cThread.start()
 
@@ -39,33 +40,34 @@ class Client:
         while True:
             msg = input()
             self.udp.sendto(msg.encode(), (HOST, PORT))
-
+            
             if msg.count('/file') == 1:
                 #Melhorar isso aqui ou só testar na abertura
                 if len(msg) < 11 and msg.count('.') != 1:
                     print("Especifique um nome válido para o arquivo")
                 else:
-                    varqName = msg.split()
-                    print("LOG: Nome do arquivo: " + str(varqName[1]) + " Comando: " + str(varqName[0]) )
-                   
+                    varqName = msg.split()                   
                     try:
-                        arq = open(str(varqName[1]), 'r')
-                        info = {'nome': str(varqName[1]), 'file': arq, 'opcao': 1}
-                        print("LOG: Arquivo aberto com sucesso")
+                        arq = open(str(varqName[1]), 'rb')
+                        info = {'nome': str(varqName[1]), 'file': arq.read(), 'opcao': 1, 'usuario': self.user}
                     except:
                         print("Arquivo inválido, tente novamente")
                     
                     try:
-                        self.tcp.connect((HOST, PORT))
-                        self.tcp.sendall(pickle.dumps(info))
-                        self.tcp.close()
-                        '''
-                        for i in arq.readlines():
-                            self.tcp.send(i)
-                        '''
-                        print("LOG: Arquivo enviado com sucesso")
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                            s.connect((HOST, PORT))
+                            s.sendall(pickle.dumps(info))
+                            s.close()
+                        arq.close()
+
                     except:
-                        print("LOG: Não enviado > Abrir conexão com o tcp")
+                        print (sys.exc_info())
+            elif msg.count('/get') == 1:
+                if len(msg) < 10 and msg.count('.') != 1:
+                    print("Especifique um nome válido para o arquivo")
+                else:
+                    print("OI")
+
             if msg == "/log":
                 print (self.log)
 
