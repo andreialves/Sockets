@@ -32,9 +32,12 @@ class Client:
             elif (data_string == "LIST"):
                 self.log.append("Log: " + str(datetime.now()) + " - LIST")
             elif (data_string ==  "BYE"):
-                self.log.append("Log: " + str(data_string.now()) + " - BYE")
+                self.log.append("Log: " + str(datetime.now()) + " - BYE")
+            elif (data_string == "KEEP"):
+                self.log.append("Log: " + str(datetime.now()) + " - KEEP ALIVE")
             else:
                 print(data_string)
+            
     
     def chat(self):
         while True:
@@ -57,16 +60,36 @@ class Client:
                         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                             s.connect((HOST, PORT))
                             s.sendall(pickle.dumps(info))
-                            s.close()
                         arq.close()
 
                     except:
                         print (sys.exc_info())
+
+
             elif msg.count('/get') == 1:
                 if len(msg) < 10 and msg.count('.') != 1:
                     print("Especifique um nome válido para o arquivo")
                 else:
-                    print("OI")
+                    while True:
+                        try:
+                            info_bin = b''
+                            con = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            con.connect((HOST, PORT))
+                            while True:
+                                arq = con.recv(4096)
+                                if not arq:
+                                    break
+                                info_bin += arq
+                            info = pickle.loads(info_bin)
+                            if info['file']:
+                                dest = info['nome']
+                                with open(dest, 'wb') as f:
+                                    f.write(info['file'])
+                                    f.close()
+                            con.close()
+                            break
+                        except Exception as e:
+                            print (e)
 
             if msg == "/log":
                 print (self.log)
